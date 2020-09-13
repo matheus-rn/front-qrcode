@@ -10,6 +10,7 @@ import {
 import QRCode from 'qrcode.react';
 import { makeStyles } from '@material-ui/core/styles';
 import { get } from 'lodash';
+import { useFormik } from 'formik';
 import { Container, Context } from './styles';
 import api from '../../services/api';
 
@@ -27,14 +28,10 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [qrCodeString, setQrCodeString] = useState('');
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(async (data) => {
     setLoading(true);
     try {
-      const response = await api.post('/transactions/', {
-        payerIdentifier: '51101547081',
-        value: 500,
-        recieverIdentifier: '04396243049',
-      });
+      const response = await api.post('/transactions/', data);
 
       // Verificar loading
       await new Promise((resolver) => setTimeout(resolver, 1500));
@@ -46,20 +43,36 @@ const Home: React.FC = () => {
     setLoading(false);
   }, []);
 
+  const formik = useFormik({
+    initialValues: {
+      playerIdentifier: '',
+      value: '',
+      recieverIdentifier: '',
+    },
+    initialErrors: {
+      playerIdentifier: ' ',
+      value: ' ',
+      recieverIdentifier: ' ',
+    },
+    enableReinitialize: true,
+    // validationSchema: SCHEMA,
+    onSubmit: handleSubmit,
+  });
+
   return (
     <Container>
       <Context>
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <TextField
-              autoComplete="fname"
-              name="name"
               variant="outlined"
               required
               fullWidth
-              id="name"
-              label="Nome da empresa"
-              autoFocus
+              value={formik.values.playerIdentifier}
+              onChange={(e) =>
+                formik.setFieldValue('playerIdentifier', e.target.value)
+              }
+              label="CNPJ/CPF do emitente"
             />
           </Grid>
           <Grid item xs={12}>
@@ -67,19 +80,24 @@ const Home: React.FC = () => {
               variant="outlined"
               required
               fullWidth
-              id="cnpj"
-              label="CNPJ"
-              name="cnpj"
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              variant="outlined"
-              required
-              fullWidth
-              id="amount"
+              value={formik.values.value}
+              onChange={(e) => formik.setFieldValue('value', e.target.value)}
               label="Valor"
               name="amount"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              autoComplete="fname"
+              variant="outlined"
+              required
+              fullWidth
+              value={formik.values.recieverIdentifier}
+              onChange={(e) =>
+                formik.setFieldValue('recieverIdentifier', e.target.value)
+              }
+              label="CNPJ/CPF do recebedor"
+              autoFocus
             />
           </Grid>
         </Grid>
@@ -92,7 +110,7 @@ const Home: React.FC = () => {
           variant="contained"
           color="primary"
           style={{ marginTop: 20, height: 40 }}
-          onClick={handleSubmit}
+          onClick={formik.submitForm}
         >
           {loading ? (
             <CircularProgress
